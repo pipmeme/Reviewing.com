@@ -330,6 +330,9 @@ const Submit = () => {
           rating: sanitizedData.rating,
           text: sanitizedData.text,
           custom_answers: sanitizedData.customAnswers,
+          photo_urls: [],
+          video_urls: [],
+          status: 'pending'
         })
         .select()
         .single();

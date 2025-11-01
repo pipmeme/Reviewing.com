@@ -309,10 +309,17 @@ const Submit = () => {
         }
       }
 
+      // Ensure we have campaign data with business_id
+      if (!campaign || !campaign.business_id) {
+        toast.error("Campaign information is missing. Please try again.");
+        setLoading(false);
+        return;
+      }
+
       // First insert the testimonial
       console.log("Inserting testimonial with data:", {
-        business_id: campaign ? campaign.business_id : businessId,
-        campaign_id: campaign ? campaign.id : null,
+        business_id: campaign.business_id,
+        campaign_id: campaign.id,
         name: sanitizedData.name,
         email: sanitizedData.email || null,
         rating: sanitizedData.rating,
@@ -323,8 +330,8 @@ const Submit = () => {
       const { data: testimonialData, error: testimonialError } = await supabase
         .from("testimonials")
         .insert({
-          business_id: campaign ? campaign.business_id : businessId,
-          campaign_id: campaign ? campaign.id : null,
+          business_id: campaign.business_id,
+          campaign_id: campaign.id,
           name: sanitizedData.name,
           email: sanitizedData.email || null,
           rating: sanitizedData.rating,

@@ -1,0 +1,4 @@
+project_id = "qrxkafcseodkveivyqdg"
+
+[functions.send-testimonial-emails]
+verify_jwt = true

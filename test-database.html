@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Migration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 { color: #333; }
+        .test-item {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #ccc;
+        }
+        .success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+        .pending {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            color: #856404;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px 0;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .code {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Database Migration Verification</h1>
+        <p>Click the button below to test if your database migration was successful:</p>
+        
+        <button onclick="runTests()" id="testBtn">Run Database Tests</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        // Get your Supabase credentials from the .env file or paste them here
+        const SUPABASE_URL = 'https://qrxkafcseodkveivyqdg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFyeGthZmNzZW9ka3ZlaXZ5cWRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5NjUyNjQsImV4cCI6MjA3NzU0MTI2NH0.K2infaRKo5R5AdDIhU-rzyraBk0hREXCj-KtJCx6fYk';
+
+        window.runTests = async function() {
+            const resultsDiv = document.getElementById('results');
+            const testBtn = document.getElementById('testBtn');
+            
+            testBtn.disabled = true;
+            resultsDiv.innerHTML = '<div class="test-item pending">⏳ Running tests...</div>';
+
+            if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+                resultsDiv.innerHTML = `
+                    <div class="test-item error">
+                        ❌ Please update the SUPABASE_URL and SUPABASE_ANON_KEY in this file first!
+                        <div class="code">
+                            Find them in: src/integrations/supabase/client.ts
+                        </div>
+                    </div>
+                `;
+                testBtn.disabled = false;
+                return;
+            }
+
+            const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
+            let html = '<h2>Test Results:</h2>';
+            let allPassed = true;
+
+            // Test 1: Check if businesses table has new columns
+            try {
+                const { data, error } = await supabase
+                    .from('businesses')
+                    .select('id, custom_colors, custom_logo_url, logo_url, brand_color')
+                    .limit(1);
+                
+                if (error) {
+                    html += `<div class="test-item error">❌ Businesses table: ${error.message}</div>`;
+                    allPassed = false;
+                } else {
+                    html += `<div class="test-item success">✅ Businesses table has all required columns</div>`;
+                }
+            } catch (e) {
+                html += `<div class="test-item error">❌ Businesses table test failed: ${e.message}</div>`;
+                allPassed = false;
+            }
+
+            // Test 2: Check if campaigns table has new columns
+            try {
+                const { data, error } = await supabase
+                    .from('campaigns')
+                    .select('id, custom_questions, allow_photo, allow_video, description')
+                    .limit(1);
+                
+                if (error) {
+                    html += `<div class="test-item error">❌ Campaigns table: ${error.message}</div>`;
+                    allPassed = false;
+                } else {
+                    html += `<div class="test-item success">✅ Campaigns table has all required columns</div>`;
+                }
+            } catch (e) {
+                html += `<div class="test-item error">❌ Campaigns table test failed: ${e.message}</div>`;
+                allPassed = false;
+            }
+
+            // Test 3: Check if testimonials table has new columns
+            try {
+                const { data, error } = await supabase
+                    .from('testimonials')
+                    .select('id, custom_answers, photo_urls, video_urls')
+                    .limit(1);
+                
+                if (error) {
+                    html += `<div class="test-item error">❌ Testimonials table: ${error.message}</div>`;
+                    allPassed = false;
+                } else {
+                    html += `<div class="test-item success">✅ Testimonials table has all required columns</div>`;
+                }
+            } catch (e) {
+                html += `<div class="test-item error">❌ Testimonials table test failed: ${e.message}</div>`;
+                allPassed = false;
+            }
+
+            // Test 4: Check if we can view businesses (RLS policy)
+            try {
+                const { data, error } = await supabase
+                    .from('businesses')
+                    .select('id')
+                    .limit(1);
+                
+                if (error) {
+                    html += `<div class="test-item error">❌ Business RLS policy: ${error.message}</div>`;
+                    allPassed = false;
+                } else {
+                    html += `<div class="test-item success">✅ Can read businesses (RLS policy working)</div>`;
+                }
+            } catch (e) {
+                html += `<div class="test-item error">❌ RLS policy test failed: ${e.message}</div>`;
+                allPassed = false;
+            }
+
+            if (allPassed) {
+                html += `
+                    <div class="test-item success" style="margin-top: 20px; font-size: 18px;">
+                        <strong>🎉 ALL TESTS PASSED!</strong><br>
+                        Your database migration was successful. The form should work now!
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="test-item error" style="margin-top: 20px;">
+                        <strong>⚠️ Some tests failed.</strong><br>
+                        Please make sure you ran the SQL migration in Supabase SQL Editor.
+                    </div>
+                `;
+            }
+
+            resultsDiv.innerHTML = html;
+            testBtn.disabled = false;
+        }
+    </script>
+</body>
+</html>

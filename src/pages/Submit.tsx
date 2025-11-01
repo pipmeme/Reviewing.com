@@ -120,13 +120,18 @@ const Submit = () => {
   const loadCampaign = async () => {
     if (!campaignSlug) return;
 
+    console.log("Loading campaign with slug:", campaignSlug); // DEBUG
+
     const { data: campaignData, error } = await supabase
       .from("campaigns")
       .select("*")
       .eq("unique_slug", campaignSlug)
       .single();
 
+    console.log("Campaign data:", campaignData, "Error:", error); // DEBUG
+
     if (error || !campaignData) {
+      console.error("Campaign load error:", error); // DEBUG
       toast.error("Campaign not found");
       navigate("/");
       return;
@@ -137,6 +142,8 @@ const Submit = () => {
       .select("*")
       .eq("id", campaignData.business_id)
       .single();
+
+    console.log("Business data:", businessData); // DEBUG
 
     const campaignWithParsedData: Campaign = {
       ...campaignData,

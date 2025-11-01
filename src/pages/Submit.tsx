@@ -340,7 +340,15 @@ const Submit = () => {
       if (testimonialError) {
         console.error("Testimonial insert error:", testimonialError);
         console.error("Error details:", JSON.stringify(testimonialError, null, 2)); // DEBUG
-        toast.error(`Failed to submit testimonial: ${testimonialError.message}`);
+        console.error("Error code:", testimonialError.code);
+        console.error("Error hint:", testimonialError.hint);
+        console.error("Error details obj:", testimonialError.details);
+        
+        // Show detailed error to user
+        const errorMsg = `Database Error: ${testimonialError.message}\nCode: ${testimonialError.code || 'N/A'}\nHint: ${testimonialError.hint || 'N/A'}`;
+        toast.error(errorMsg);
+        alert(`FULL ERROR DEBUG:\n${JSON.stringify(testimonialError, null, 2)}`);
+        
         setLoading(false);
         return;
       }

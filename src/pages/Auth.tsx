@@ -12,7 +12,7 @@ import { z } from "zod";
 const authSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  name: z.string().min(2, "Name must be at least 2 characters").optional(),
+  businessName: z.string().min(2, "Business name must be at least 2 characters").optional(),
 });
 
 const Auth = () => {
@@ -22,23 +22,8 @@ const Auth = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    name: "",
+    businessName: "",
   });
-  const [pendingEmail, setPendingEmail] = useState<string>("");
-
-  const resendConfirmation = async () => {
-    if (!pendingEmail) return;
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email: pendingEmail,
-      options: { emailRedirectTo: `${window.location.origin}/dashboard` }
-    });
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Confirmation email resent. Check your inbox.');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +33,7 @@ const Auth = () => {
       const validation = authSchema.safeParse({
         email: formData.email,
         password: formData.password,
-        name: isLogin ? undefined : formData.name,
+        businessName: isLogin ? undefined : formData.businessName,
       });
 
       if (!validation.success) {
@@ -58,41 +43,43 @@ const Auth = () => {
       }
 
       if (isLogin) {
+        // Simple login with email and password
         const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
 
         if (error) {
-          const msg = (error.message || '').toLowerCase();
-          if (msg.includes('email') && msg.includes('confirm')) {
-            setPendingEmail(formData.email);
-            toast.error('Email not confirmed. Please confirm your email.');
-          } else {
-            toast.error(error.message);
-          }
+          toast.error(error.message);
         } else {
           toast.success("Welcome back!");
           navigate("/dashboard");
         }
       } else {
-        const { error } = await supabase.auth.signUp({
+        // Simple signup with email and password - no email verification
+        const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
-            data: {
-              name: formData.name,
-            },
             emailRedirectTo: `${window.location.origin}/dashboard`,
           },
         });
 
         if (error) {
           toast.error(error.message);
-        } else {
-          setPendingEmail(formData.email);
-          toast.success("Account created! Check your email to confirm your account.");
-          // Do not navigate immediately; wait for email confirmation
+        } else if (data?.user) {
+          // Create business for the new user
+          const businessName = formData.businessName?.trim() || 'My Business';
+          const { error: bizError } = await supabase
+            .from('businesses')
+            .insert({ user_id: data.user.id, business_name: businessName });
+          
+          if (bizError) {
+            console.warn('Business creation failed:', bizError);
+          }
+          
+          toast.success('Account created! Redirecting...');
+          navigate('/dashboard');
         }
       }
     } catch (error: any) {
@@ -122,16 +109,14 @@ const Auth = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div>
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="businessName">Business Name</Label>
               <Input
-                id="name"
+                id="businessName"
                 type="text"
-                placeholder="John Doe"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                required={!isLogin}
+                placeholder="Acme Co"
+                value={formData.businessName}
+                onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                required
               />
             </div>
           )}
@@ -164,21 +149,13 @@ const Auth = () => {
             />
           </div>
 
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? "Loading..." : isLogin ? "Sign In" : "Create Account"}
-      </Button>
-
-      {(pendingEmail && (
-        <div className="mt-3 text-center">
-          <button
-            type="button"
-            onClick={resendConfirmation}
-            className="text-sm text-primary hover:underline"
-          >
-            Resend confirmation email
-          </button>
-        </div>
-      ))}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading
+              ? "Loading..."
+              : isLogin
+                ? "Sign In"
+                : "Create Account"}
+          </Button>
         </form>
 
         <div className="mt-6 text-center">

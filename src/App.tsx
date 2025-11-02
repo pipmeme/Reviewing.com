@@ -11,6 +11,7 @@ import Submit from "./pages/Submit";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import CampaignDashboard from "./pages/CampaignDashboard";
+import AuthCallback from "./pages/AuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/campaign/:campaignSlug" element={<CampaignDashboard />} />
             <Route path="/submit/:campaignSlug" element={<Submit />} />

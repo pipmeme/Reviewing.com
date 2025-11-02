@@ -15,8 +15,8 @@ import { LoadingPage } from "@/components/LoadingSpinner";
 
 // Admin client for testimonial submission (bypasses RLS)
 const supabaseAdmin = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10aWJ2d3doa2lkb2RoenNkeXN3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjAyOTkzMCwiZXhwIjoyMDc3NjA1OTMwfQ.W_GuvJggEqSmWsJnlb1jjOUEa_iqHcCkmKOvITWa_KE'
+  'https://askbzwvetijmxututwfh.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFza2J6d3ZldGlqbXh1dHV0d2ZoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjA0MTc0NSwiZXhwIjoyMDc3NjE3NzQ1fQ.VqRKebuNB6JyV_M5a3Nyrx5hyQtflRnUpSCzAXWn3j4'
 );
 
 // Sanitization function

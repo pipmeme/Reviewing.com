@@ -24,6 +24,21 @@ const Auth = () => {
     password: "",
     name: "",
   });
+  const [pendingEmail, setPendingEmail] = useState<string>("");
+
+  const resendConfirmation = async () => {
+    if (!pendingEmail) return;
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: pendingEmail,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` }
+    });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Confirmation email resent. Check your inbox.');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +64,13 @@ const Auth = () => {
         });
 
         if (error) {
-          toast.error(error.message);
+          const msg = (error.message || '').toLowerCase();
+          if (msg.includes('email') && msg.includes('confirm')) {
+            setPendingEmail(formData.email);
+            toast.error('Email not confirmed. Please confirm your email.');
+          } else {
+            toast.error(error.message);
+          }
         } else {
           toast.success("Welcome back!");
           navigate("/dashboard");
@@ -69,8 +90,9 @@ const Auth = () => {
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success("Account created! Welcome to Trustly!");
-          navigate("/dashboard");
+          setPendingEmail(formData.email);
+          toast.success("Account created! Check your email to confirm your account.");
+          // Do not navigate immediately; wait for email confirmation
         }
       }
     } catch (error: any) {
@@ -142,9 +164,21 @@ const Auth = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Loading..." : isLogin ? "Sign In" : "Create Account"}
-          </Button>
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? "Loading..." : isLogin ? "Sign In" : "Create Account"}
+      </Button>
+
+      {(pendingEmail && (
+        <div className="mt-3 text-center">
+          <button
+            type="button"
+            onClick={resendConfirmation}
+            className="text-sm text-primary hover:underline"
+          >
+            Resend confirmation email
+          </button>
+        </div>
+      ))}
         </form>
 
         <div className="mt-6 text-center">

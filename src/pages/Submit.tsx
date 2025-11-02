@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { createClient } from '@supabase/supabase-js';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,12 +11,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 import DOMPurify from "dompurify";
 import { LoadingPage } from "@/components/LoadingSpinner";
-
-// Admin client for testimonial submission (bypasses RLS)
-const supabaseAdmin = createClient(
-  'https://askbzwvetijmxututwfh.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFza2J6d3ZldGlqbXh1dHV0d2ZoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjA0MTc0NSwiZXhwIjoyMDc3NjE3NzQ1fQ.VqRKebuNB6JyV_M5a3Nyrx5hyQtflRnUpSCzAXWn3j4'
-);
 
 // Sanitization function
 const sanitizeInput = (input: string): string => {
@@ -84,6 +77,7 @@ const Submit = () => {
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState<string[]>([]);
   const [videoPreviewUrls, setVideoPreviewUrls] = useState<string[]>([]);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-testimonial`;
 
   // Auto-play video with sound after 3 seconds
   useEffect(() => {
@@ -323,7 +317,7 @@ const Submit = () => {
         return;
       }
 
-      // Insert testimonial using admin client (bypasses RLS)
+      // Build testimonial payload
       const testimonialPayload = {
         business_id: campaign.business_id,
         campaign_id: campaign.id,
@@ -337,23 +331,22 @@ const Submit = () => {
         status: 'pending'
       };
 
-      console.log("Submitting testimonial with admin client:", testimonialPayload);
+      console.log("Submitting testimonial via Edge Function:", testimonialPayload);
 
-      const { data: testimonialData, error: testimonialError } = await supabaseAdmin
-        .from('testimonials')
-        .insert(testimonialPayload)
-        .select()
-        .single();
-
-      if (testimonialError) {
-        console.error("Testimonial insert error:", testimonialError);
-        toast.error(`Submission failed: ${testimonialError.message}`);
+      const resp = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testimonialPayload)
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        console.error("Testimonial submit error:", err);
+        toast.error(`Submission failed: ${err?.error || resp.status}`);
         setLoading(false);
         return;
       }
-
+      const { data: testimonialData } = await resp.json();
       if (!testimonialData) {
-        console.error("No testimonial data returned");
         toast.error("Submission failed: No data returned");
         setLoading(false);
         return;

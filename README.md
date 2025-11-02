@@ -1,4 +1,6 @@
-# Welcome to your Lovable project
+# Testimonial Platform - ReviewStaking.com
+
+Live URL: https://review-staking-com.vercel.app
 
 ## Project info
 
@@ -7,6 +9,8 @@
 ## How can I edit this code?
 
 There are several ways of editing your application.
+
+```
 
 **Use Lovable**
 

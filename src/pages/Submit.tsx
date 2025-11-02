@@ -316,8 +316,8 @@ const Submit = () => {
         return;
       }
 
-      // First insert the testimonial
-      console.log("Inserting testimonial with data:", {
+      // Insert testimonial using Edge Function (bypasses RLS)
+      const testimonialPayload = {
         business_id: campaign.business_id,
         campaign_id: campaign.id,
         name: sanitizedData.name,
@@ -325,40 +325,35 @@ const Submit = () => {
         rating: sanitizedData.rating,
         text: sanitizedData.text,
         custom_answers: sanitizedData.customAnswers,
-      }); // DEBUG
-      
-      const { data: testimonialData, error: testimonialError } = await supabase
-        .from("testimonials")
-        .insert({
-          business_id: campaign.business_id,
-          campaign_id: campaign.id,
-          name: sanitizedData.name,
-          email: sanitizedData.email || null,
-          rating: sanitizedData.rating,
-          text: sanitizedData.text,
-          custom_answers: sanitizedData.customAnswers,
-          photo_urls: [],
-          video_urls: [],
-          status: 'pending'
-        })
-        .select()
-        .single();
+        photo_urls: [],
+        video_urls: [],
+        status: 'pending'
+      };
 
-      if (testimonialError) {
-        console.error("Testimonial insert error:", testimonialError);
-        console.error("Error details:", JSON.stringify(testimonialError, null, 2)); // DEBUG
-        console.error("Error code:", testimonialError.code);
-        console.error("Error hint:", testimonialError.hint);
-        console.error("Error details obj:", testimonialError.details);
-        
-        // Show detailed error to user
-        const errorMsg = `Database Error: ${testimonialError.message}\nCode: ${testimonialError.code || 'N/A'}\nHint: ${testimonialError.hint || 'N/A'}`;
-        toast.error(errorMsg);
-        alert(`FULL ERROR DEBUG:\n${JSON.stringify(testimonialError, null, 2)}`);
-        
+      console.log("Submitting testimonial via Edge Function:", testimonialPayload);
+
+      const { data: functionData, error: functionError } = await supabase.functions.invoke(
+        'submit-testimonial',
+        { body: testimonialPayload }
+      );
+
+      if (functionError) {
+        console.error("Edge Function error:", functionError);
+        toast.error(`Submission failed: ${functionError.message}`);
         setLoading(false);
         return;
       }
+
+      const testimonialData = functionData?.data;
+
+      if (!testimonialData) {
+        console.error("No testimonial data returned from function");
+        toast.error("Submission failed: No data returned");
+        setLoading(false);
+        return;
+      }
+
+      console.log("Testimonial submitted successfully:", testimonialData);
 
       // Upload photos
       if (formData.photos.length > 0) {
